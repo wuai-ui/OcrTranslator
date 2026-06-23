@@ -12,6 +12,11 @@ public static class Program
     [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "MessageBoxW")]
     private static extern int Win32MessageBox(IntPtr hWnd, string lpText, string lpCaption, uint uType);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern int ShellExecute(IntPtr hWnd, string lpOperation, string lpFile, string? lpParameters, string? lpDirectory, int nShowCmd);
+
+    private const int SW_SHOWNORMAL = 1;
+
     [STAThread]
     static void Main(string[] args)
     {
@@ -39,15 +44,18 @@ public static class Program
                 string errorMsg = hr switch
                 {
                     unchecked((int)0x80670000) => "未找到 Windows App SDK 框架",
-                    unchecked((int)0x80670016) => "未找到兼容版本的 Windows App Runtime 包",
+                    unchecked((int)0x80670016) => "未安装 Windows App SDK 1.7 运行时",
                     _ => $"未知错误 (HRESULT=0x{hr:X8})"
                 };
                 Win32MessageBox(IntPtr.Zero,
-                    $"Windows App Runtime 初始化失败\n\n{errorMsg}\n\n" +
-                    "请确保已安装 Windows App SDK 1.7 运行时\n" +
-                    "下载: https://aka.ms/windowsappsdk/1.7/latest\n\n" +
-                    $"日志目录: {Logger.GetLogDirectory()}",
-                    "极客 OCR v4 - 启动失败", 0x10);
+                    $"启动失败：{errorMsg}\n\n" +
+                    "本程序运行需要以下依赖（点击「确定」后将自动打开下载页）：\n" +
+                    "  1. Windows App SDK 1.7 Runtime\n" +
+                    "  2. .NET 10.0 Desktop Runtime\n\n" +
+                    $"日志: {Logger.GetLogDirectory()}",
+                    "极客 OCR v4 - 缺少运行时依赖", 0x30); // MB_ICONWARNING
+                // 自动打开 Windows App SDK 下载页
+                ShellExecute(IntPtr.Zero, "open", "https://aka.ms/windowsappsdk/1.7/latest", null, null, SW_SHOWNORMAL);
                 return;
             }
 
