@@ -312,4 +312,43 @@ v4 首次启动为空配置，需重新填 API 密钥。两者可共存。
 
 ---
 
-*文档生成时间：2026-06-23 · 极客 OCR v4.0*
+## 十一、后续迭代记录（v4.0 交付后）
+
+### 11.1 GitHub 仓库部署
+- 仓库：https://github.com/wuai-ui/OcrTranslator（SSH ed25519 认证）
+- v4 独立 git 仓库（`.gitignore` 排除 bin/obj/.vs），73 个干净源码文件
+- git 身份修正：本机原配置 `wanlonglong@cet-electric.com`（上一使用者遗留）→ 改为 `wuai-ui <1258392094@qq.com>`，`amend --reset-author` + force push
+
+### 11.2 API KEY 安全验证
+- v3 `BaiduApi.cs` 硬编码密钥（`20211015000973706` / `NXtiSqwS3KaB6`）→ v4 **彻底清除**
+- KEY 只存 `%LOCALAPPDATA%\GeekOCR_v4\settings.json`（项目目录外，物理上不进 git）
+- 四重验证：源码无硬编码 ✓ / 仓库无 settings.json ✓ / launchSettings.json 无 KEY ✓ / .gitignore 排除 ✓
+
+### 11.3 DPI 多屏兼容性（继承 v3 物理像素方案）
+- `app.manifest` 声明 `PerMonitorV2`
+- `ScreenCaptureService`：Win32 `BitBlt` 取物理像素，刻意避免 `System.Drawing` 的 DPI 自动缩放
+- `CaptureWindow`：纯 Win32 分层窗口，全物理像素坐标（原样保留自 v3）
+- 多屏：`MonitorFromPoint` 定位鼠标所在显示器 + `GetMonitorInfo` 物理区域
+- 结论：双屏/单屏/不同分辨率/不同 DPI 混搭均兼容
+
+### 11.4 启动依赖检测 + 自动下载
+- `Program.cs` Bootstrap 检测 WinAppSDK 1.7，缺失 → 弹友好框 + `ShellExecute` 自动打开下载页
+- .NET 10 缺失 → 系统 apphost 自动提示
+- 详见 `依赖说明.md`
+
+### 11.5 打包与发布
+- `publish.ps1`：本地一键打包（VS MSBuild Release x64 → `dist\OcrTranslator_v4_x64.zip`）
+- `.github/workflows/release.yml`：GitHub Actions 在线编译 + artifact + tag 触发自动 Release
+- 框架依赖部署：~180KB exe，目标机需 .NET 10 Desktop Runtime + Windows App SDK 1.7 Runtime
+
+### 11.6 其他修复
+- 翻译分段并行（`Task.WhenAll`）/ 译文框可编辑（TwoWay）
+- 快捷键允许单功能键（F1-F12）+ 修复按错卡死
+- 设置页 TAB 重排 + 快捷键独立 + 隐藏内置设置齿轮
+- 写盘计数式批量（所有保存点）/ InfoBar 提示（不覆盖译文）
+- 启动焦点到原文输入框 / 设置页 caption 按钮跟随主题
+- v4 专属图标（PowerShell 生成）
+
+---
+
+*最后更新：2026-06-23 · 极客 OCR v4.0 · github.com/wuai-ui/OcrTranslator*
