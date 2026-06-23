@@ -1,0 +1,156 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+        <RootNamespace>OcrTranslator</RootNamespace>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationTitle>极客 OCR - 旗舰版</ApplicationTitle>
+        <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+        <Platforms>x86;x64;ARM64</Platforms>
+        <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+        <UseWinUI>true</UseWinUI>
+        <Nullable>enable</Nullable>
+
+        <!-- 解包便携部署核心配置 -->
+        <WindowsPackageType>None</WindowsPackageType>
+        <EnableMsixTooling>false</EnableMsixTooling>
+        <AppxPackage>false</AppxPackage>
+
+        <!-- 框架依赖部署：完全依赖本地已安装的 .NET 运行时和 WinAppSDK Runtime -->
+        <SelfContained>false</SelfContained>
+        <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+
+        <!-- WinUI 3 不支持 PublishSingleFile -->
+        <PublishSingleFile>false</PublishSingleFile>
+
+        <!-- 禁止裁剪和 AOT（WinUI 3 XAML 反射强依赖） -->
+        <PublishTrimmed>false</PublishTrimmed>
+        <PublishReadyToRun>false</PublishReadyToRun>
+        <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
+
+        <!-- 禁用自动生成的 Main，使用 Program.cs 显式 Bootstrap -->
+        <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    </PropertyGroup>
+
+    <!-- Assets 资源管理 -->
+    <ItemGroup>
+        <Content Remove="Assets\qiu.gif" />
+        <Content Remove="Assets\qiujindutiao.gif" />
+        <Content Remove="Assets\Sample Animation.lottie" />
+        <Content Remove="Assets\yuanmao.gif" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Assets\loading.json" />
+        <None Remove="Assets\loading_1.json" />
+        <None Remove="Assets\mao.gif" />
+        <None Remove="Assets\rocket.json" />
+        <None Remove="Assets\zhayanmao.gif" />
+        <None Remove="LoadingWindow.xaml" />
+        <None Remove="SettingsWindow.xaml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets\SplashScreen.scale-200.png" />
+        <Content Include="Assets\LockScreenLogo.scale-200.png" />
+        <Content Include="Assets\Square150x150Logo.scale-200.png" />
+        <Content Include="Assets\Square44x44Logo.scale-200.png" />
+        <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+        <Content Include="Assets\StoreLogo.png" />
+        <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+        <Content Update="Assets\Sample Animation.lottie">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Update="Assets\loading.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Update="Assets\rocket.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Update="Assets\loading_1.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Update="Assets\zhayanmao.gif">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Update="Assets\zhuanmao.gif">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Update="Assets\mao.gif">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Page Update="SettingsWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+        <Page Update="LoadingWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Manifest Include="$(ApplicationManifest)" />
+    </ItemGroup>
+
+    <!-- NuGet 依赖 -->
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+        <PackageReference Include="CommunityToolkit.WinUI.Lottie" Version="8.1.240821" />
+        <PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250602001" />
+        <PackageReference Include="System.Drawing.Common" Version="9.0.5" />
+    </ItemGroup>
+
+    <!-- XBF 保障：确保编译后的 XAML 二进制文件在发布目录中 -->
+    <Target Name="EnsureXbfInPublishDir" AfterTargets="Publish">
+        <PropertyGroup>
+            <_BuildOutputAbs>$([System.IO.Path]::GetFullPath($(OutputPath)))</_BuildOutputAbs>
+            <_PublishDirAbs>$([System.IO.Path]::GetFullPath($(PublishDir)))</_PublishDirAbs>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <_XbfFiles Include="$(_BuildOutputAbs)*.xbf"
+                       Condition="Exists('$(_BuildOutputAbs)App.xbf')" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(_XbfFiles)"
+              DestinationFolder="$(_PublishDirAbs)"
+              SkipUnchangedFiles="true"
+              Condition="@(_XbfFiles->Count()) &gt; 0" />
+
+        <Copy SourceFiles="$(_BuildOutputAbs)$(RootNamespace).pri"
+              DestinationFolder="$(_PublishDirAbs)"
+              SkipUnchangedFiles="true"
+              Condition="Exists('$(_BuildOutputAbs)$(RootNamespace).pri')" />
+
+        <Message Text="[GeekOCR] XBF 和 PRI 文件已部署" Importance="high" />
+    </Target>
+
+    <!-- 发布后自动删除 WinAppSDK 打包的系统 DLL，防止版本冲突崩溃 (0xc0000602)
+         注意：仅在分发到不同 Windows 版本的机器时启用，本机调试请注释掉 Delete 行 -->
+    <Target Name="RemoveConflictingSystemDlls" AfterTargets="Publish" Condition="false">
+        <PropertyGroup>
+            <_PublishDirAbs>$([System.IO.Path]::GetFullPath($(PublishDir)))</_PublishDirAbs>
+        </PropertyGroup>
+        <ItemGroup>
+            <_SystemDlls Include="$(_PublishDirAbs)CoreMessagingXP.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)DwmSceneI.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)dcompi.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)dwmcorei.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)wuceffectsi.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)Microsoft.DirectManipulation.dll" />
+            <_SystemDlls Include="$(_PublishDirAbs)Microsoft.InputStateManager.dll" />
+        </ItemGroup>
+        <Delete Files="@(_SystemDlls)" />
+        <Message Text="[GeekOCR] 已删除冲突系统 DLL" Importance="high" />
+    </Target>
+</Project>

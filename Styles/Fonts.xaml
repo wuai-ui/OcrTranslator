@@ -1,0 +1,9 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 字体族：默认 UI 用雅黑，OCR 原文用等宽便于阅读数字/代码。 -->
+    <FontFamily x:Key="DefaultFontFamily">Microsoft YaHei UI</FontFamily>
+    <FontFamily x:Key="MonospaceFontFamily">Consolas</FontFamily>
+
+</ResourceDictionary>

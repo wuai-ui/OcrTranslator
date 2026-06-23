@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OcrTranslator": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

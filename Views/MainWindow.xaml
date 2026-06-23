@@ -1,0 +1,194 @@
+<Window
+    x:Class="OcrTranslator.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:tb="using:H.NotifyIcon">
+
+    <!-- Mica 背景（cs 中设置 SystemBackdrop），窗口底色由 token 提供（Mica 会覆盖透出壁纸） -->
+    <Grid Background="{ThemeResource WindowBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 系统托盘图标 -->
+        <tb:TaskbarIcon x:Name="TrayIcon" ToolTipText="极客 OCR v4" DoubleClickCommand="{x:Bind ShowWindowCommand}">
+            <tb:TaskbarIcon.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="控制中心" Command="{x:Bind MenuSettingsCommand}"/>
+                    <MenuFlyoutSeparator/>
+                    <MenuFlyoutItem Text="完全退出" Command="{x:Bind MenuExitCommand}"/>
+                </MenuFlyout>
+            </tb:TaskbarIcon.ContextFlyout>
+        </tb:TaskbarIcon>
+
+        <!-- 自定义标题栏 -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="8">
+                <FontIcon Glyph="&#xE8A5;" FontSize="14" Foreground="{ThemeResource AccentBrush}" VerticalAlignment="Center"/>
+                <TextBlock Text="极客 OCR v4.0" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <!-- 主题切换按钮（右侧，Margin 避开系统 caption 按钮） -->
+            <Button x:Name="ThemeButton" HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Margin="0,0,150,0" Padding="8,0" CornerRadius="6" Background="Transparent" BorderThickness="0"
+                    ToolTipService.ToolTip="主题">
+                <FontIcon Glyph="&#xE793;" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}"/>
+                <Button.Flyout>
+                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                        <ToggleMenuFlyoutItem x:Name="ThemeLightItem" Text="浅色" Click="ThemeMenuItem_Click"/>
+                        <ToggleMenuFlyoutItem x:Name="ThemeDarkItem" Text="深色" Click="ThemeMenuItem_Click"/>
+                        <ToggleMenuFlyoutItem x:Name="ThemeSystemItem" Text="跟随系统" Click="ThemeMenuItem_Click"/>
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+        </Grid>
+
+        <!-- 顶部工具栏 -->
+        <Border Grid.Row="1" Margin="8,4,8,8" Padding="8,6" Style="{StaticResource CardBorder}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="6">
+                    <!-- OCR模式选择 -->
+                    <ComboBox x:Name="ModeComboBox" MinWidth="140" Style="{StaticResource ToolbarComboBox}"/>
+
+                    <!-- 字体选择按钮 -->
+                    <Button x:Name="LeftFontBtn" MinWidth="88" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource SubtleControlBrush}" BorderBrush="{ThemeResource SubtleBorderBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE8D2;" FontSize="10"/>
+                            <TextBlock Text="左字体" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button.Flyout><MenuFlyout x:Name="LeftFontFlyout"/></Button.Flyout>
+                    </Button>
+
+                    <Button x:Name="RightFontBtn" MinWidth="88" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource SubtleControlBrush}" BorderBrush="{ThemeResource SubtleBorderBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE8D2;" FontSize="10"/>
+                            <TextBlock Text="右字体" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button.Flyout><MenuFlyout x:Name="RightFontFlyout"/></Button.Flyout>
+                    </Button>
+
+                    <!-- 分隔线 -->
+                    <Border Width="1" Height="20" Background="{ThemeResource SubtleBorderBrush}" VerticalAlignment="Center" Margin="4,0"/>
+
+                    <!-- 朗读目标 -->
+                    <ComboBox x:Name="SpeechTargetComboBox" SelectedIndex="0" MinWidth="90" Style="{StaticResource ToolbarComboBox}">
+                        <ComboBoxItem Content="朗读原文"/>
+                        <ComboBoxItem Content="朗读译文"/>
+                    </ComboBox>
+
+                    <!-- TTS协议 -->
+                    <ComboBox x:Name="TtsProtocolComboBox" SelectedIndex="0" MinWidth="80" Style="{StaticResource ToolbarComboBox}">
+                        <ComboBoxItem Content="HTTP"/>
+                        <ComboBoxItem Content="WebSocket"/>
+                    </ComboBox>
+
+                    <!-- 语音分类 -->
+                    <ComboBox x:Name="VoiceCategoryComboBox" SelectedIndex="0" MinWidth="80" Style="{StaticResource ToolbarComboBox}"
+                              SelectionChanged="VoiceCategoryComboBox_SelectionChanged">
+                        <ComboBoxItem Content="基础"/>
+                        <ComboBoxItem Content="精品"/>
+                        <ComboBoxItem Content="臻品"/>
+                        <ComboBoxItem Content="大模型"/>
+                    </ComboBox>
+
+                    <!-- 音色选择 -->
+                    <ComboBox x:Name="VoiceComboBox" MinWidth="140" Style="{StaticResource ToolbarComboBox}"/>
+                </StackPanel>
+
+                <!-- 右侧功能按钮 -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                    <Button x:Name="SettingsButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource AccentSubtleBrush}" BorderBrush="{ThemeResource AccentSubtleBorderBrush}"
+                            Click="SettingsButton_Click" ToolTipService.ToolTip="设置">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE713;" FontSize="13" Foreground="{ThemeResource AccentBrush}"/>
+                            <TextBlock Text="设置" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource AccentBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="TranslateButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource SuccessSubtleBrush}" BorderBrush="{ThemeResource SuccessSubtleBorderBrush}"
+                            Click="TranslateButton_Click" ToolTipService.ToolTip="翻译">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE8A6;" FontSize="13" Foreground="{ThemeResource SuccessBrush}"/>
+                            <TextBlock Text="翻译" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource SuccessBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="PlaySpeechButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource WarningSubtleBrush}" BorderBrush="{ThemeResource WarningSubtleBorderBrush}"
+                            Click="PlaySpeechButton_Click" ToolTipService.ToolTip="朗读">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon x:Name="PlayIcon" Glyph="&#xE768;" FontSize="13" Foreground="{ThemeResource WarningBrush}"/>
+                            <TextBlock x:Name="PlayText" Text="朗读" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource WarningBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="DownloadSpeechButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource InfoSubtleBrush}" BorderBrush="{ThemeResource InfoSubtleBorderBrush}"
+                            Click="DownloadSpeechButton_Click" ToolTipService.ToolTip="下载音频">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE896;" FontSize="13" Foreground="{ThemeResource InfoBrush}"/>
+                            <TextBlock Text="下载" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource InfoBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <ToggleButton x:Name="PinButton" MinWidth="64" Style="{StaticResource ToolbarToggleButton}"
+                                  Click="PinButton_Click" ToolTipService.ToolTip="置顶">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE718;" FontSize="13"/>
+                            <TextBlock Text="置顶" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ToggleButton>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 双栏文本区域 -->
+        <Grid Grid.Row="2" Margin="8,0,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左栏：原文 + 耗时 -->
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" x:Name="OriginalTextBox" AcceptsReturn="True" TextWrapping="Wrap"
+                             Text="{x:Bind Vm.OriginalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             BorderThickness="0" Background="Transparent"
+                             Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
+                             PlaceholderText="OCR 识别结果将显示在这里..."/>
+                    <TextBlock Grid.Row="1" x:Name="OcrElapsedText" Margin="10,0,10,8"
+                               Text="{x:Bind Vm.OcrElapsed, Mode=OneWay}"
+                               FontSize="11" Foreground="{ThemeResource TextTertiaryBrush}"/>
+                </Grid>
+            </Border>
+
+            <!-- 右栏：译文 + 耗时 -->
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" x:Name="TranslatedTextBox" AcceptsReturn="True" TextWrapping="Wrap"
+                             Text="{x:Bind Vm.TranslatedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             BorderThickness="0" Background="Transparent"
+                             Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
+                             PlaceholderText="翻译结果将显示在这里..."/>
+                    <TextBlock Grid.Row="1" x:Name="TranslateElapsedText" Margin="10,0,10,8"
+                               Text="{x:Bind Vm.TranslateElapsed, Mode=OneWay}"
+                               FontSize="11" Foreground="{ThemeResource TextTertiaryBrush}"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 状态提示横幅（非侵入，自动消失，不覆盖译文） -->
+        <InfoBar x:Name="StatusInfoBar" Grid.Row="3" Margin="8,0,8,8"
+                 IsOpen="False" IsClosable="True" CornerRadius="6"/>
+    </Grid>
+</Window>
