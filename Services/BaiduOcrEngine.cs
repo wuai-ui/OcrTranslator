@@ -24,7 +24,10 @@ public sealed class BaiduOcrEngine : IOcrEngine
     public async Task<string> RecognizeAsync(byte[] imageBytes, OcrMode mode, CancellationToken ct = default)
     {
         string token = await _tokens.GetOcrTokenAsync(ct);
-        string url = $"https://aip.baidubce.com/rest/2.0/ocr/v1/{mode.ApiPath}?access_token={token}";
+        // 百度表格识别用 v2 高精度表格 API；其他用 v1 通用 API
+        string url = mode.Category == OcrCategory.Table
+            ? $"https://aip.baidubce.com/rest/2.0/ocr/v2/accurate_table?access_token={token}"
+            : $"https://aip.baidubce.com/rest/2.0/ocr/v1/{mode.ApiPath}?access_token={token}";
 
         var parameters = new List<KeyValuePair<string, string>>
         {
@@ -40,6 +43,52 @@ public sealed class BaiduOcrEngine : IOcrEngine
 
         if (doc.RootElement.TryGetProperty("error_code", out _) && doc.RootElement.TryGetProperty("error_msg", out var err))
             throw new Exception($"百度API拒绝: {err.GetString()}");
+
+        // 分支 0：表格识别（百度 accurate_table v2 API，按行列结构化输出）
+        if (mode.Category == OcrCategory.Table)
+        {
+            if (!doc.RootElement.TryGetProperty("tables_result", out var tablesResult))
+                return "未识别到表格";
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var table in tablesResult.EnumerateArray())
+            {
+                int rows = table.TryGetProperty("rows", out var rEl) ? rEl.GetInt32() : 0;
+                int cols = table.TryGetProperty("columns", out var cEl) ? cEl.GetInt32() : 0;
+                if (rows == 0 || cols == 0) continue;
+
+                // 收集单元格（兼容 header/body 分开格式）
+                var cells = new List<(int row, int col, string text)>();
+                if (table.TryGetProperty("cellInfos", out var cellInfos))
+                {
+                    foreach (var cell in cellInfos.EnumerateArray())
+                        cells.Add(ParseCell(cell, rows, cols));
+                }
+                else
+                {
+                    if (table.TryGetProperty("header", out var header) && header.TryGetProperty("cellInfos", out var hCells))
+                        foreach (var cell in hCells.EnumerateArray()) cells.Add(ParseCell(cell, rows, cols));
+                    if (table.TryGetProperty("body", out var body) && body.TryGetProperty("cellInfos", out var bCells))
+                        foreach (var cell in bCells.EnumerateArray()) cells.Add(ParseCell(cell, rows, cols));
+                }
+
+                // 构建二维数组
+                var grid = new string[rows, cols];
+                foreach (var (row, col, text) in cells)
+                    if (row >= 0 && row < rows && col >= 0 && col < cols)
+                        grid[row, col] = text;
+
+                // 每行用制表符分隔列，保持表格结构
+                for (int r = 0; r < rows; r++)
+                {
+                    var parts = new List<string>();
+                    for (int c = 0; c < cols; c++)
+                        parts.Add(grid[r, c] ?? "");
+                    sb.AppendLine(string.Join("\t", parts));
+                }
+            }
+            return sb.ToString().TrimEnd();
+        }
 
         // 分支 1：结构化银行卡
         if (mode.Category == OcrCategory.BankCard)
@@ -109,5 +158,16 @@ public sealed class BaiduOcrEngine : IOcrEngine
         if (currentGroup.Any())
             groupedLines.Add(string.Join(" ", currentGroup.OrderBy(x => x.left).Select(x => x.text)));
         return string.Join("\n", groupedLines);
+    }
+
+    /// <summary>解析百度表格 API 的单元格 JSON（兼容 contents / words 字段名）。</summary>
+    private static (int row, int col, string text) ParseCell(System.Text.Json.JsonElement cell, int maxRows, int maxCols)
+    {
+        int row = cell.TryGetProperty("row", out var r) ? r.GetInt32() : -1;
+        int col = cell.TryGetProperty("col", out var c) ? c.GetInt32() : -1;
+        string text = cell.TryGetProperty("contents", out var t) ? (t.GetString() ?? "").Trim()
+            : cell.TryGetProperty("words", out var w) ? (w.GetString() ?? "").Trim()
+            : "";
+        return (row, col, text);
     }
 }
