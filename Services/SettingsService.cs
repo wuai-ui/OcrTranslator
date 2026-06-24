@@ -37,6 +37,9 @@ public sealed class SettingsService
     public bool IsFontShown(string fontName) => AppSettings.GetBool($"ShowFont_{fontName}", true);
     public void SetFontShown(string fontName, bool shown) => AppSettings.Set($"ShowFont_{fontName}", shown);
 
+    // ── 默认 OCR 识别模式 ────────────────────────────────────
+    public string DefaultOcrMode { get => AppSettings.GetString("DefaultOcrMode", "通用-标准") ?? "通用-标准"; set => AppSettings.Set("DefaultOcrMode", value); }
+
     /// <summary>凭证是否已配置（用于首次启动引导）。</summary>
     public bool HasOcrCredentials => !string.IsNullOrWhiteSpace(OcrApiKey) && !string.IsNullOrWhiteSpace(OcrSecretKey);
     public bool HasTranslateCredentials => !string.IsNullOrWhiteSpace(TransAppId) && !string.IsNullOrWhiteSpace(TransSecretKey);

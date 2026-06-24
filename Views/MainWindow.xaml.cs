@@ -352,11 +352,12 @@ namespace OcrTranslator.Views
                     if (_settings.IsModeShown(m.DisplayName))
                         ModeComboBox.Items.Add(new ComboBoxItem { Content = m.DisplayName });
                 }
-                // 默认选择「通用-标准」
+                // 默认选择配置的默认 OCR 模式
+                string defaultMode = _settings.DefaultOcrMode;
                 int defaultModeIdx = 0;
                 for (int i = 0; i < ModeComboBox.Items.Count; i++)
                 {
-                    if (((ModeComboBox.Items[i] as ComboBoxItem)?.Content?.ToString()) == "通用-标准")
+                    if (((ModeComboBox.Items[i] as ComboBoxItem)?.Content?.ToString()) == defaultMode)
                     { defaultModeIdx = i; break; }
                 }
                 if (ModeComboBox.Items.Count > 0) ModeComboBox.SelectedIndex = defaultModeIdx;

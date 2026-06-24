@@ -132,6 +132,19 @@ namespace OcrTranslator.Views
             OcrModesContainer.Children.Clear();
             PopulateMultiColumnToggles(OcrModesContainer, _allOcrModes, "mode", 2);
 
+            // 默认 OCR 模式下拉框
+            DefaultOcrModeComboBox.Items.Clear();
+            foreach (var mode in OcrModes.All)
+                DefaultOcrModeComboBox.Items.Add(new ComboBoxItem { Content = mode.DisplayName });
+            string currentDefaultMode = _settings.DefaultOcrMode;
+            int defaultModeIdx = 0;
+            for (int i = 0; i < DefaultOcrModeComboBox.Items.Count; i++)
+            {
+                if ((DefaultOcrModeComboBox.Items[i] as ComboBoxItem)?.Content?.ToString() == currentDefaultMode)
+                { defaultModeIdx = i; break; }
+            }
+            if (DefaultOcrModeComboBox.Items.Count > 0) DefaultOcrModeComboBox.SelectedIndex = defaultModeIdx;
+
             // 字体列表
             FontsContainer.Children.Clear();
             var fonts = new List<string>();
@@ -457,6 +470,10 @@ namespace OcrTranslator.Views
             _settings.TransSecretKey = TransSecretKeyBox.Text;
 
             _settings.AutoTranslate = AutoTranslateSwitch.IsOn;
+
+            // 保存默认 OCR 模式
+            if (DefaultOcrModeComboBox.SelectedItem is ComboBoxItem selectedMode)
+                _settings.DefaultOcrMode = selectedMode.Content.ToString();
 
             SaveToggleSettings(OcrModesContainer, "mode");
             SaveToggleSettings(FontsContainer, "font");

@@ -81,30 +81,33 @@ public sealed class BaiduOcrEngine : IOcrEngine
 
         if (linesData.All(x => x.height == 0)) return string.Join("\n", linesData.Select(x => x.text));
 
-        // 动态均值抗漂移排版，根据行平均高度的 60% 判定是否在同一行
+        // 改进排版：全局中位数高度 + 1.5 倍阈值聚类
+        // 解决表格同行多列被拆行的问题（阈值从 0.6→1.5，基准从组内均值→全局中位数）
         linesData = linesData.OrderBy(x => x.top).ToList();
+
+        // 全局中位数高度（比组内均值更稳定，不受组内文字大小差异影响）
+        var heights = linesData.Where(x => x.height > 0).Select(x => x.height).OrderBy(x => x).ToList();
+        int medianHeight = heights.Count > 0 ? heights[heights.Count / 2] : 20;
+        double clusterThreshold = medianHeight * 1.5; // 1.5 倍，覆盖表格列间距内的 top 差异
+
         var groupedLines = new List<string>();
         var currentGroup = new List<(string text, int top, int left, int height)> { linesData[0] };
 
         for (int i = 1; i < linesData.Count; i++)
         {
             var current = linesData[i];
-            double avgTop = currentGroup.Average(x => x.top);
-            double avgHeight = currentGroup.Average(x => x.height);
+            double groupAvgTop = currentGroup.Average(x => x.top);
 
-            if (Math.Abs(current.top - avgTop) <= (avgHeight * 0.6)) currentGroup.Add(current);
+            if (Math.Abs(current.top - groupAvgTop) <= clusterThreshold)
+                currentGroup.Add(current);
             else
             {
-                currentGroup = currentGroup.OrderBy(x => x.left).ToList();
-                groupedLines.Add(string.Join(" ", currentGroup.Select(x => x.text)));
+                groupedLines.Add(string.Join(" ", currentGroup.OrderBy(x => x.left).Select(x => x.text)));
                 currentGroup = new List<(string text, int top, int left, int height)> { current };
             }
         }
         if (currentGroup.Any())
-        {
-            currentGroup = currentGroup.OrderBy(x => x.left).ToList();
-            groupedLines.Add(string.Join(" ", currentGroup.Select(x => x.text)));
-        }
+            groupedLines.Add(string.Join(" ", currentGroup.OrderBy(x => x.left).Select(x => x.text)));
         return string.Join("\n", groupedLines);
     }
 }

@@ -114,7 +114,13 @@
 
                     <!-- OCR 模式管理 -->
                     <StackPanel x:Name="OcrModePanel" Visibility="Collapsed" Spacing="16">
-                        <TextBlock Text="主界面 OCR 模式管理" FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}"/>
+                        <TextBlock Text="默认 OCR 识别模式" FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="选择 OCR 截图识别时默认使用的识别模式" FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}"/>
+                            <ComboBox x:Name="DefaultOcrModeComboBox" MinWidth="200" HorizontalAlignment="Left"/>
+                        </StackPanel>
+
+                        <TextBlock Text="主界面 OCR 模式管理" FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" Margin="0,8,0,0"/>
                         <TextBlock Text="开关控制哪些 OCR 模式显示在主界面的下拉框中" FontSize="12" Foreground="{ThemeResource TextSecondaryBrush}"/>
                         <StackPanel x:Name="OcrModesContainer" Spacing="8"/>
                     </StackPanel>
