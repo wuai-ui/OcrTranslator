@@ -124,6 +124,13 @@ namespace OcrTranslator.Views
             ReloadSettingsFromLocal();
             RestoreComboBoxState();
 
+            // 深色模式下 TextBox 悬浮/聚焦不变色（覆盖控件模板 PointerOver 状态）
+            var cardBg = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundBrush"];
+            OriginalTextBox.PointerEntered += (s, e) => OriginalTextBox.Background = cardBg;
+            OriginalTextBox.PointerExited += (s, e) => OriginalTextBox.Background = cardBg;
+            TranslatedTextBox.PointerEntered += (s, e) => TranslatedTextBox.Background = cardBg;
+            TranslatedTextBox.PointerExited += (s, e) => TranslatedTextBox.Background = cardBg;
+
             // 自定义标题栏
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);

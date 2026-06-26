@@ -137,7 +137,7 @@
                         <TextBlock Text="关于 极客 OCR" FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}"/>
                         <TextBlock Text="v4.0 | .NET 10 + WinUI 3 + Windows App SDK 1.7" FontSize="14" Foreground="{ThemeResource TextPrimaryBrush}"/>
                         <TextBlock Text="分层架构（Abstractions / Services / ViewModels / Views）+ Mica 材质 + 三态主题。配置与日志独立于 v3（GeekOCR_v4）。" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                        <HyperlinkButton Content="GitHub 开源主页" NavigateUri="https://github.com/YourName/GeekOcr"/>
+                        <HyperlinkButton Content="GitHub 开源主页" NavigateUri="https://github.com/wuai-ui/OcrTranslator"/>
                     </StackPanel>
 
                 </StackPanel>

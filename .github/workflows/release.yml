@@ -10,6 +10,9 @@ on:
     tags: [ 'v*' ]
   workflow_dispatch:
 
+permissions:
+  contents: write  # 创建 Release 需要写权限（generate_release_notes）
+
 jobs:
   build:
     runs-on: windows-latest

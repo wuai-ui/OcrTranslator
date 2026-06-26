@@ -3,6 +3,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -19,8 +20,10 @@ namespace OcrTranslator.Views
         private readonly ThemeService _theme;
 
         private readonly string[] _allOcrModes = {
-            "通用-含位置", "通用-标准", "高精-含位置", "高精-标准",
-            "手写识别", "身份证", "银行卡", "网络图"
+            "通用-标准", "通用-含位置", "高精-标准", "高精-含位置",
+            "网络图", "手写识别", "数字识别",
+            "身份证", "银行卡", "驾驶证识别", "行驶证识别", "营业执照识别", "车牌识别",
+            "通用票据识别", "增值税发票识别", "火车票识别", "出租车票识别"
         };
 
         // 快捷键录制状态
@@ -128,9 +131,8 @@ namespace OcrTranslator.Views
             ThemeRadio.SelectedIndex = (int)_theme.Current;
             _isLoading = false;
 
-            // OCR 模式列表
-            OcrModesContainer.Children.Clear();
-            PopulateMultiColumnToggles(OcrModesContainer, _allOcrModes, "mode", 2);
+            // OCR 模式列表（表格形式：分类/模式/API/调用量/Toggle）
+            PopulateOcrModeTable(OcrModesContainer);
 
             // 默认 OCR 模式下拉框
             DefaultOcrModeComboBox.Items.Clear();
@@ -145,12 +147,8 @@ namespace OcrTranslator.Views
             }
             if (DefaultOcrModeComboBox.Items.Count > 0) DefaultOcrModeComboBox.SelectedIndex = defaultModeIdx;
 
-            // 字体列表
-            FontsContainer.Children.Clear();
-            var fonts = new List<string>();
-            foreach (var f in System.Drawing.FontFamily.Families)
-                if (!f.Name.StartsWith("@")) fonts.Add(f.Name);
-            PopulateMultiColumnToggles(FontsContainer, fonts, "font", 3);
+            // 字体列表（表格形式）
+            PopulateFontTable(FontsContainer);
 
             // 快捷键
             _currentOcrHotkey = _settings.OcrHotkey;
@@ -162,7 +160,7 @@ namespace OcrTranslator.Views
             StartupSwitch.IsOn = _startup.IsEnabled();
         }
 
-        private void PopulateMultiColumnToggles(StackPanel container, IList<string> items, string kind, int columns)
+        private void PopulateMultiColumnToggles(StackPanel container, IList<string> items, string kind, int columns, IDictionary<string, string> quotas = null)
         {
             for (int i = 0; i < items.Count; i += columns)
             {
@@ -174,9 +172,10 @@ namespace OcrTranslator.Views
                 {
                     string name = items[i + c];
                     bool shown = kind == "mode" ? _settings.IsModeShown(name) : _settings.IsFontShown(name);
+                    string quota = quotas != null && quotas.TryGetValue(name, out var q) ? q : null;
                     var toggle = new ToggleSwitch
                     {
-                        Header = name,
+                        Header = quota != null ? $"{name}  —  调用量：{quota}" : name,
                         IsOn = shown,
                         OnContent = "显示",
                         OffContent = "隐藏",
@@ -191,6 +190,163 @@ namespace OcrTranslator.Views
             }
         }
 
+        // ── 字体配置表格（与 OCR 表格同风格：表头+交替背景+边框包裹+行高缩小） ──
+        private void PopulateFontTable(StackPanel container)
+        {
+            container.Children.Clear();
+            var tablePanel = new StackPanel();
+
+            // 表头
+            tablePanel.Children.Add(CreateFontTableRow("字体名称", "显隐", isHeader: true));
+
+            // 数据行
+            var fonts = new List<string>();
+            foreach (var f in System.Drawing.FontFamily.Families)
+                if (!f.Name.StartsWith("@")) fonts.Add(f.Name);
+
+            for (int i = 0; i < fonts.Count; i++)
+                tablePanel.Children.Add(CreateFontTableRow(fonts[i], null, false, i % 2 == 1, fonts[i]));
+
+            // 左右边框包裹
+            container.Children.Add(new Border
+            {
+                BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBorderBrush"],
+                BorderThickness = new Thickness(1, 0, 1, 0),
+                CornerRadius = new CornerRadius(8),
+                Child = tablePanel,
+            });
+        }
+
+        private Grid CreateFontTableRow(string c1, string c2, bool isHeader, bool isOdd = false, string tag = null)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 0, 0, 0) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+            if (isHeader)
+            {
+                grid.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleControlBrush"];
+                grid.BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBorderBrush"];
+                grid.BorderThickness = new Thickness(0, 0, 0, 1);
+                AddFontTextCell(grid, 0, c1, true);
+                AddFontTextCell(grid, 1, c2, true);
+            }
+            else
+            {
+                if (isOdd) grid.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleControlBrush"];
+                AddFontTextCell(grid, 0, c1, false);
+                var toggle = new ToggleSwitch { IsOn = _settings.IsFontShown(c1), OnContent = "", OffContent = "", MinWidth = 50, Tag = tag, VerticalAlignment = VerticalAlignment.Center, MinHeight = 0 };
+                Grid.SetColumn(toggle, 1); grid.Children.Add(toggle);
+            }
+            return grid;
+        }
+
+        private void AddFontTextCell(Grid grid, int col, string text, bool isHeader)
+        {
+            var tb = new TextBlock
+            {
+                Text = text,
+                FontWeight = isHeader ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
+                FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6, 3, 6, 3),
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[isHeader ? "TextSecondaryBrush" : "TextPrimaryBrush"],
+            };
+            Grid.SetColumn(tb, col); grid.Children.Add(tb);
+        }
+
+        // ── OCR 模式表格布局（分类/模式/API Path/调用量/Toggle） ──────────
+        private void PopulateOcrModeTable(StackPanel container)
+        {
+            container.Children.Clear();
+            var tablePanel = new StackPanel();
+
+            var groups = new (string label, string[] modes)[]
+            {
+                ("通用", new[] { "通用-标准", "通用-含位置", "高精-标准", "高精-含位置", "网络图", "手写识别", "数字识别" }),
+                ("证件", new[] { "身份证", "银行卡", "驾驶证识别", "行驶证识别", "营业执照识别", "车牌识别" }),
+                ("票据", new[] { "通用票据识别", "增值税发票识别", "火车票识别", "出租车票识别" }),
+            };
+
+            // 表头
+            tablePanel.Children.Add(CreateOcrTableRow("分类", "模式", "API Path", "调用量", "显隐", isHeader: true));
+
+            // 数据行
+            int rowIdx = 0;
+            foreach (var (label, modes) in groups)
+            {
+                for (int i = 0; i < modes.Length; i++)
+                {
+                    var mode = OcrTranslator.Models.OcrModes.All.FirstOrDefault(m => m.DisplayName == modes[i]);
+                    if (mode == null) continue;
+                    tablePanel.Children.Add(CreateOcrModeRow(i == 0 ? label : "", mode, rowIdx % 2 == 1));
+                    rowIdx++;
+                }
+            }
+            // 左右边框包裹
+            container.Children.Add(new Border
+            {
+                BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBorderBrush"],
+                BorderThickness = new Thickness(1, 0, 1, 0),
+                CornerRadius = new CornerRadius(8),
+                Child = tablePanel,
+            });
+        }
+
+        private Grid CreateOcrTableRow(string c1, string c2, string c3, string c4, string c5, bool isHeader)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+            if (isHeader)
+            {
+                grid.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleControlBrush"];
+                grid.BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBorderBrush"];
+                grid.BorderThickness = new Thickness(0, 0, 0, 1);
+            }
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(55) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            var fw = isHeader ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+            AddOcrTextCell(grid, 0, c1, fw);
+            AddOcrTextCell(grid, 1, c2, fw);
+            AddOcrTextCell(grid, 2, c3, fw);
+            AddOcrTextCell(grid, 3, c4, fw);
+            if (isHeader) AddOcrTextCell(grid, 4, c5, fw);
+            return grid;
+        }
+
+        private Grid CreateOcrModeRow(string category, OcrTranslator.Models.OcrMode mode, bool isOdd = false)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+            if (isOdd)
+                grid.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleControlBrush"];
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(55) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            if (!string.IsNullOrEmpty(category))
+                AddOcrTextCell(grid, 0, category, Microsoft.UI.Text.FontWeights.SemiBold);
+            AddOcrTextCell(grid, 1, mode.DisplayName, Microsoft.UI.Text.FontWeights.Normal);
+            AddOcrTextCell(grid, 2, mode.ApiPath, Microsoft.UI.Text.FontWeights.Normal);
+            AddOcrTextCell(grid, 3, mode.Quota, Microsoft.UI.Text.FontWeights.Normal);
+            var toggle = new ToggleSwitch { IsOn = _settings.IsModeShown(mode.DisplayName), OnContent = "", OffContent = "", MinWidth = 50, Tag = mode.DisplayName, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(toggle, 4);
+            grid.Children.Add(toggle);
+            return grid;
+        }
+
+        private void AddOcrTextCell(Grid grid, int col, string text, Windows.UI.Text.FontWeight fw)
+        {
+            var tb = new TextBlock
+            {
+                Text = text, FontWeight = fw, FontSize = 12,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 6, 6, 6),
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"],
+            };
+            Grid.SetColumn(tb, col);
+            grid.Children.Add(tb);
+        }
+
         private void SaveToggleSettings(StackPanel container, string kind)
         {
             foreach (UIElement elem in container.Children)
@@ -201,7 +357,8 @@ namespace OcrTranslator.Views
                     {
                         if (child is ToggleSwitch toggle)
                         {
-                            string name = toggle.Header as string;
+                            string name = toggle.Tag as string ?? toggle.Header as string;
+                            if (name == null) continue;
                             if (kind == "mode") _settings.SetModeShown(name, toggle.IsOn);
                             else _settings.SetFontShown(name, toggle.IsOn);
                         }

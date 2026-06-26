@@ -159,7 +159,7 @@
                     </Grid.RowDefinitions>
                     <TextBox Grid.Row="0" x:Name="OriginalTextBox" AcceptsReturn="True" TextWrapping="Wrap"
                              Text="{x:Bind Vm.OriginalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             BorderThickness="0" Background="Transparent"
+                             BorderThickness="0" Background="{ThemeResource CardBackgroundBrush}"
                              Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
                              PlaceholderText="OCR 识别结果将显示在这里..."/>
                     <TextBlock Grid.Row="1" x:Name="OcrElapsedText" Margin="10,0,10,8"
@@ -177,7 +177,7 @@
                     </Grid.RowDefinitions>
                     <TextBox Grid.Row="0" x:Name="TranslatedTextBox" AcceptsReturn="True" TextWrapping="Wrap"
                              Text="{x:Bind Vm.TranslatedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             BorderThickness="0" Background="Transparent"
+                             BorderThickness="0" Background="{ThemeResource CardBackgroundBrush}"
                              Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
                              PlaceholderText="翻译结果将显示在这里..."/>
                     <TextBlock Grid.Row="1" x:Name="TranslateElapsedText" Margin="10,0,10,8"

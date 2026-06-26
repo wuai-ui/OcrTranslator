@@ -16,14 +16,12 @@ public enum OcrCategory
     /// <summary>银行卡：按 result 字段结构化输出</summary>
     BankCard,
 
-    /// <summary>表格识别：调百度表格 API v2，按 row/col 结构化输出（制表符分隔列）</summary>
-    Table,
 }
 
 /// <summary>
-/// 一种 OCR 识别模式：显示名 ↔ 百度 API path ↔ 结果类别。
+/// 一种 OCR 识别模式：显示名 ↔ 百度 API path ↔ 结果类别 ↔ 是否显示位置坐标。
 /// </summary>
-public sealed record OcrMode(string DisplayName, string ApiPath, OcrCategory Category)
+public sealed record OcrMode(string DisplayName, string ApiPath, OcrCategory Category, string Quota = "")
 {
     public bool IsStructured => Category != OcrCategory.General;
 }
@@ -35,15 +33,23 @@ public static class OcrModes
 {
     public static readonly IReadOnlyList<OcrMode> All = new[]
     {
-        new OcrMode("通用-含位置", "general", OcrCategory.General),
-        new OcrMode("通用-标准", "general_basic", OcrCategory.General),
-        new OcrMode("高精-含位置", "accurate", OcrCategory.General),
-        new OcrMode("高精-标准", "accurate_basic", OcrCategory.General),
-        new OcrMode("手写识别", "handwriting", OcrCategory.General),
-        new OcrMode("表格识别", "table", OcrCategory.Table),
-        new OcrMode("身份证", "idcard", OcrCategory.IdCard),
-        new OcrMode("银行卡", "bankcard", OcrCategory.BankCard),
-        new OcrMode("网络图", "webimage", OcrCategory.General),
+        new OcrMode("通用-标准",    "general_basic",      OcrCategory.General,  "50000次/天"),
+        new OcrMode("通用-含位置",  "general",            OcrCategory.General,  "500次/天"),
+        new OcrMode("高精-标准",    "accurate_basic",     OcrCategory.General,  "500次/天"),
+        new OcrMode("高精-含位置",  "accurate",           OcrCategory.General,  "50次/天"),
+        new OcrMode("网络图",       "webimage",           OcrCategory.General,  "500次/天"),
+        new OcrMode("手写识别",     "handwriting",        OcrCategory.General,  "50次/天"),
+        new OcrMode("数字识别",     "numbers",            OcrCategory.General,  "200次/天"),
+        new OcrMode("身份证",       "idcard",             OcrCategory.IdCard,   "500次/天"),
+        new OcrMode("银行卡",       "bankcard",           OcrCategory.BankCard, "500次/天"),
+        new OcrMode("驾驶证识别",   "driving_license",    OcrCategory.General,  "200次/天"),
+        new OcrMode("行驶证识别",   "vehicle_license",    OcrCategory.General,  "200次/天"),
+        new OcrMode("营业执照识别", "business_license",   OcrCategory.General,  "200次/天"),
+        new OcrMode("车牌识别",     "license_plate",      OcrCategory.General,  "200次/天"),
+        new OcrMode("通用票据识别", "receipt",            OcrCategory.General,  "200次/天"),
+        new OcrMode("增值税发票识别","vat_invoice",       OcrCategory.General,  "500次/天"),
+        new OcrMode("火车票识别",   "train_ticket",       OcrCategory.General,  "50次/天"),
+        new OcrMode("出租车票识别", "taxi_ticket",        OcrCategory.General,  "50次/天"),
     };
 
     /// <summary>按显示名查找；找不到时回退到「通用-标准」。</summary>
