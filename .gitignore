@@ -4,3 +4,4 @@ obj/
 *.user
 *.bak
 dist/
+dotnet-install.ps1

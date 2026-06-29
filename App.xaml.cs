@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using OcrTranslator.Abstractions;
@@ -65,6 +66,9 @@ public partial class App : Application
     private static IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
+
+        // 共享 HttpClient（复用连接池，避免各服务各自创建）
+        services.AddSingleton(new HttpClient { Timeout = TimeSpan.FromSeconds(15) });
 
         // 基础设施
         services.AddSingleton<SettingsService>();

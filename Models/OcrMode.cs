@@ -57,6 +57,6 @@ public static class OcrModes
     {
         foreach (var m in All)
             if (m.DisplayName == name) return m;
-        return All[1];
+        return All[0]; // "通用-标准"
     }
 }

@@ -16,10 +16,14 @@ namespace OcrTranslator.Services;
 /// </summary>
 public sealed class BaiduOcrEngine : IOcrEngine
 {
-    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly HttpClient _client;
     private readonly IBaiduTokenProvider _tokens;
 
-    public BaiduOcrEngine(IBaiduTokenProvider tokens) => _tokens = tokens;
+    public BaiduOcrEngine(IBaiduTokenProvider tokens, HttpClient client)
+    {
+        _tokens = tokens;
+        _client = client;
+    }
 
     public async Task<string> RecognizeAsync(byte[] imageBytes, OcrMode mode, CancellationToken ct = default)
     {
@@ -34,7 +38,7 @@ public sealed class BaiduOcrEngine : IOcrEngine
             parameters.Add(new KeyValuePair<string, string>("id_card_side", "front"));
 
         var content = new FormUrlEncodedContent(parameters);
-        var response = await Client.PostAsync(url, content, ct);
+        var response = await _client.PostAsync(url, content, ct);
         var jsonStr = await response.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(jsonStr);
 

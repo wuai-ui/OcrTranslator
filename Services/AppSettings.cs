@@ -44,9 +44,9 @@ public static class AppSettings
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // 配置文件损坏则忽略，使用默认值
+                Logger.Warn("AppSettings", $"配置文件读取失败，使用默认值: {ex.Message}");
             }
             return _cache;
         }
@@ -64,9 +64,9 @@ public static class AppSettings
             var json = JsonSerializer.Serialize(_cache, options);
             File.WriteAllText(SettingsPath, json);
         }
-        catch
+        catch (Exception ex)
         {
-            // 写入失败时静默忽略
+            Logger.Error("AppSettings", $"配置文件写入失败: {ex.Message}");
         }
     }
 
@@ -107,24 +107,21 @@ public static class AppSettings
     public static void Set(string key, string? value)
     {
         var dict = Load();
-        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(value));
-        dict[key] = doc.RootElement.Clone();
+        dict[key] = JsonSerializer.SerializeToElement(value);
         Save();
     }
 
     public static void Set(string key, bool value)
     {
         var dict = Load();
-        using var doc = JsonDocument.Parse(value ? "true" : "false");
-        dict[key] = doc.RootElement.Clone();
+        dict[key] = JsonSerializer.SerializeToElement(value);
         Save();
     }
 
     public static void Set(string key, int value)
     {
         var dict = Load();
-        using var doc = JsonDocument.Parse(value.ToString());
-        dict[key] = doc.RootElement.Clone();
+        dict[key] = JsonSerializer.SerializeToElement(value);
         Save();
     }
 

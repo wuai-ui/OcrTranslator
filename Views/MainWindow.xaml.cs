@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -377,7 +375,7 @@ namespace OcrTranslator.Views
             {
                 leftFlyout.Items.Clear();
                 rightFlyout.Items.Clear();
-                foreach (var fontName in System.Drawing.FontFamily.Families.Select(f => f.Name).Where(n => !n.StartsWith("@")).Distinct())
+                foreach (var fontName in SettingsWindow.GetCachedFontNames())
                 {
                     if (_settings.IsFontShown(fontName))
                     {
@@ -535,45 +533,54 @@ namespace OcrTranslator.Views
         private async void PlaySpeechButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isTtsCoolingDown) return;
-            if (Vm.IsSpeaking)
+            try
             {
+                if (Vm.IsSpeaking)
+                {
+                    _isTtsCoolingDown = true;
+                    _mediaPlayer.Pause();
+                    _ttsCts?.Cancel();
+                    _ttsCts?.Dispose();
+                    _ttsCts = null;
+                    _ttsQueue.Clear();
+                    ResetSpeechState();
+                    await Task.Delay(500);
+                    _isTtsCoolingDown = false;
+                    return;
+                }
+
+                int targetIdx = SpeechTargetComboBox != null ? SpeechTargetComboBox.SelectedIndex : 0;
+                string text = targetIdx == 0 ? Vm.OriginalText : Vm.TranslatedText;
+                text = Regex.Replace(text, @"\n\n\[.*?耗时.*?\]", "");
+                if (string.IsNullOrWhiteSpace(text) || text.StartsWith("(") || text.StartsWith("请求失败"))
+                {
+                    ShowInfo(InfoBarSeverity.Warning, "没有可朗读的文本，请先识别或翻译");
+                    return;
+                }
+
+                Vm.IsSpeaking = true;
                 _isTtsCoolingDown = true;
-                _mediaPlayer.Pause();
-                _ttsCts?.Cancel();
-                _ttsCts?.Dispose();
-                _ttsCts = null;
-                _ttsQueue.Clear();
-                ResetSpeechState();
-                await Task.Delay(500);
+                PlayIcon.Glyph = ""; // 暂停图标
+                if (PlayText != null) PlayText.Text = "停止";
+                ToolTipService.SetToolTip(PlaySpeechButton, "停止朗读");
+
+                _ttsCts = new CancellationTokenSource();
+                _currentTtsLan = LanguageDetector.SpeechLanguage(text);
+                _currentTtsVoice = VoiceComboBox.SelectedItem != null
+                    ? (int)((ComboBoxItem)VoiceComboBox.SelectedItem).Tag!
+                    : VoiceCatalog.DefaultVoiceId;
+                _currentTtsIsWebSocket = TtsProtocolComboBox != null && TtsProtocolComboBox.SelectedIndex == 1;
+
+                EnqueueTextChunks(text);
+                PlayNextChunk();
                 _isTtsCoolingDown = false;
-                return;
             }
-
-            int targetIdx = SpeechTargetComboBox != null ? SpeechTargetComboBox.SelectedIndex : 0;
-            string text = targetIdx == 0 ? Vm.OriginalText : Vm.TranslatedText;
-            text = Regex.Replace(text, @"\n\n\[.*?耗时.*?\]", "");
-            if (string.IsNullOrWhiteSpace(text) || text.StartsWith("(") || text.StartsWith("请求失败"))
+            catch (Exception ex)
             {
-                ShowInfo(InfoBarSeverity.Warning, "没有可朗读的文本，请先识别或翻译");
-                return;
+                Logger.Error("MainWindow", "朗读启动失败", ex);
+                ResetSpeechState();
+                _isTtsCoolingDown = false;
             }
-
-            Vm.IsSpeaking = true;
-            _isTtsCoolingDown = true;
-            PlayIcon.Glyph = ""; // 暂停图标
-            if (PlayText != null) PlayText.Text = "停止";
-            ToolTipService.SetToolTip(PlaySpeechButton, "停止朗读");
-
-            _ttsCts = new CancellationTokenSource();
-            _currentTtsLan = LanguageDetector.SpeechLanguage(text);
-            _currentTtsVoice = VoiceComboBox.SelectedItem != null
-                ? (int)((ComboBoxItem)VoiceComboBox.SelectedItem).Tag!
-                : VoiceCatalog.DefaultVoiceId;
-            _currentTtsIsWebSocket = TtsProtocolComboBox != null && TtsProtocolComboBox.SelectedIndex == 1;
-
-            EnqueueTextChunks(text);
-            PlayNextChunk();
-            _isTtsCoolingDown = false;
         }
 
         private void EnqueueTextChunks(string text)
@@ -593,9 +600,9 @@ namespace OcrTranslator.Views
         private async void PlayNextChunk()
         {
             if (_ttsQueue.Count == 0 || _ttsCts?.IsCancellationRequested == true) { ResetSpeechState(); return; }
-            string chunk = _ttsQueue.Dequeue();
             try
             {
+                string chunk = _ttsQueue.Dequeue();
                 var voice = new VoiceInfo("", _currentTtsVoice, VoiceCategory.Basic);
                 byte[] audio = await Task.Run(() => _speech.SynthesizeAsync(chunk, voice, _currentTtsLan, _currentTtsIsWebSocket, _ttsCts!.Token), _ttsCts!.Token);
 

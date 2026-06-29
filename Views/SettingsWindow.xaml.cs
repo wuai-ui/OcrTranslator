@@ -19,12 +19,20 @@ namespace OcrTranslator.Views
         private readonly StartupService _startup;
         private readonly ThemeService _theme;
 
-        private readonly string[] _allOcrModes = {
-            "通用-标准", "通用-含位置", "高精-标准", "高精-含位置",
-            "网络图", "手写识别", "数字识别",
-            "身份证", "银行卡", "驾驶证识别", "行驶证识别", "营业执照识别", "车牌识别",
-            "通用票据识别", "增值税发票识别", "火车票识别", "出租车票识别"
-        };
+        // 缓存系统字体列表（避免每次打开设置页都调用系统 API）
+#nullable enable
+        private static List<string>? _cachedFontNames;
+#nullable disable
+        public static List<string> GetCachedFontNames()
+        {
+            if (_cachedFontNames == null)
+            {
+                _cachedFontNames = new List<string>();
+                foreach (var f in System.Drawing.FontFamily.Families)
+                    if (!f.Name.StartsWith("@")) _cachedFontNames.Add(f.Name);
+            }
+            return _cachedFontNames;
+        }
 
         // 快捷键录制状态
         private bool _isRecording = false;
@@ -37,7 +45,7 @@ namespace OcrTranslator.Views
 
         // Win32 键盘钩子用于录制
         private IntPtr _hookId = IntPtr.Zero;
-        private NativeMethods.LowLevelKeyboardProc _hookProc;
+        private Platform.Win32.NativeMethods.LowLevelKeyboardProc _hookProc;
 
         private bool _shiftPressed = false;
         private bool _ctrlPressed = false;
@@ -199,10 +207,8 @@ namespace OcrTranslator.Views
             // 表头
             tablePanel.Children.Add(CreateFontTableRow("字体名称", "显隐", isHeader: true));
 
-            // 数据行
-            var fonts = new List<string>();
-            foreach (var f in System.Drawing.FontFamily.Families)
-                if (!f.Name.StartsWith("@")) fonts.Add(f.Name);
+            // 数据行（使用缓存的字体列表）
+            var fonts = GetCachedFontNames();
 
             for (int i = 0; i < fonts.Count; i++)
                 tablePanel.Children.Add(CreateFontTableRow(fonts[i], null, false, i % 2 == 1, fonts[i]));
@@ -349,22 +355,27 @@ namespace OcrTranslator.Views
 
         private void SaveToggleSettings(StackPanel container, string kind)
         {
-            foreach (UIElement elem in container.Children)
+            AppSettings.BeginBatch(); // 自保护：无论调用方是否包了批量，都不会频繁写盘
+            try
             {
-                if (elem is Grid rowGrid)
+                foreach (UIElement elem in container.Children)
                 {
-                    foreach (UIElement child in rowGrid.Children)
+                    if (elem is Grid rowGrid)
                     {
-                        if (child is ToggleSwitch toggle)
+                        foreach (UIElement child in rowGrid.Children)
                         {
-                            string name = toggle.Tag as string ?? toggle.Header as string;
-                            if (name == null) continue;
-                            if (kind == "mode") _settings.SetModeShown(name, toggle.IsOn);
-                            else _settings.SetFontShown(name, toggle.IsOn);
+                            if (child is ToggleSwitch toggle)
+                            {
+                                string name = toggle.Tag as string ?? toggle.Header as string;
+                                if (name == null) continue;
+                                if (kind == "mode") _settings.SetModeShown(name, toggle.IsOn);
+                                else _settings.SetFontShown(name, toggle.IsOn);
+                            }
                         }
                     }
                 }
             }
+            finally { AppSettings.EndBatch(); }
         }
 
         private void ThemeRadio_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -476,10 +487,10 @@ namespace OcrTranslator.Views
             });
         }
 
-        private IntPtr SetHook(NativeMethods.LowLevelKeyboardProc proc)
+        private IntPtr SetHook(Platform.Win32.NativeMethods.LowLevelKeyboardProc proc)
         {
             var curModule = System.Diagnostics.Process.GetCurrentProcess().MainModule;
-            return NativeMethods.SetWindowsHookEx(13, proc, NativeMethods.GetModuleHandle(curModule.ModuleName), 0);
+            return Platform.Win32.NativeMethods.SetWindowsHookEx(13, proc, Platform.Win32.NativeMethods.GetModuleHandle(curModule.ModuleName), 0);
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -494,7 +505,7 @@ namespace OcrTranslator.Views
                 if (isKeyDown && vkCode == 0x1B)
                 {
                     StopRecording();
-                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                    return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
 
                 // 追踪修饰键状态
@@ -502,23 +513,23 @@ namespace OcrTranslator.Views
                 {
                     if (isKeyDown) _shiftPressed = true;
                     else if (isKeyUp) _shiftPressed = false;
-                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                    return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
                 if (vkCode == 0x11 || vkCode == 0xA2 || vkCode == 0xA3)
                 {
                     if (isKeyDown) _ctrlPressed = true;
                     else if (isKeyUp) _ctrlPressed = false;
-                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                    return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
                 if (vkCode == 0x12 || vkCode == 0xA4 || vkCode == 0xA5)
                 {
                     if (isKeyDown) _altPressed = true;
                     else if (isKeyUp) _altPressed = false;
-                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                    return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
                 if (vkCode == 0x5B || vkCode == 0x5C)
                 {
-                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                    return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
 
                 // 普通键按下时，尝试录制快捷键
@@ -573,18 +584,18 @@ namespace OcrTranslator.Views
                         _shiftPressed = false;
                         _ctrlPressed = false;
                         _altPressed = false;
-                        return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+                        return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
                     }
                 }
             }
-            return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+            return Platform.Win32.NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         private void UnhookKeyboard()
         {
             if (_hookId != IntPtr.Zero)
             {
-                NativeMethods.UnhookWindowsHookEx(_hookId);
+                Platform.Win32.NativeMethods.UnhookWindowsHookEx(_hookId);
                 _hookId = IntPtr.Zero;
             }
         }
@@ -644,25 +655,5 @@ namespace OcrTranslator.Views
             this.Close();
         }
 
-        #region Win32 API（快捷键录制钩子）
-
-        private static class NativeMethods
-        {
-            public delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-            [DllImport("user32.dll", SetLastError = true)]
-            public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
-
-            [DllImport("user32.dll", SetLastError = true)]
-            public static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-            [DllImport("user32.dll")]
-            public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-            [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-            public static extern IntPtr GetModuleHandle(string lpModuleName);
-        }
-
-        #endregion
     }
 }

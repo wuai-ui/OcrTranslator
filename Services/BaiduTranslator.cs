@@ -20,10 +20,14 @@ namespace OcrTranslator.Services;
 /// </summary>
 public sealed class BaiduTranslator : ITranslator
 {
-    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly HttpClient _client;
     private readonly SettingsService _settings;
 
-    public BaiduTranslator(SettingsService settings) => _settings = settings;
+    public BaiduTranslator(SettingsService settings, HttpClient client)
+    {
+        _settings = settings;
+        _client = client;
+    }
 
     public async Task<string> TranslateAsync(string text, string toLang, CancellationToken ct = default)
     {
@@ -93,7 +97,7 @@ public sealed class BaiduTranslator : ITranslator
         string sign = GetMd5Hash(signStr);
         string url = $"https://fanyi-api.baidu.com/api/trans/vip/translate?q={Uri.EscapeDataString(text)}&from={fromLang}&to={toLang}&appid={appId}&salt={salt}&sign={sign}";
 
-        var response = await Client.GetAsync(url, ct);
+        var response = await _client.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
         var jsonStr = await response.Content.ReadAsStringAsync(ct);
 

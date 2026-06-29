@@ -21,10 +21,14 @@ namespace OcrTranslator.Services;
 public sealed class BaiduSpeechSynthesizer : ISpeechSynthesizer
 {
     private const string Cuid = "geek_ocr_v4"; // v4 独立 cuid
-    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly HttpClient _client;
     private readonly IBaiduTokenProvider _tokens;
 
-    public BaiduSpeechSynthesizer(IBaiduTokenProvider tokens) => _tokens = tokens;
+    public BaiduSpeechSynthesizer(IBaiduTokenProvider tokens, HttpClient client)
+    {
+        _tokens = tokens;
+        _client = client;
+    }
 
     public async Task<byte[]> SynthesizeAsync(string text, VoiceInfo voice, string lan, bool useWebSocket, CancellationToken ct = default)
     {
@@ -45,7 +49,7 @@ public sealed class BaiduSpeechSynthesizer : ISpeechSynthesizer
             { "lan", lan }, { "per", per.ToString() }, { "spd", "5" }, { "pit", "5" }, { "vol", "7" }
         };
         var content = new FormUrlEncodedContent(fields);
-        var response = await Client.PostAsync(url, content, cancellationToken);
+        var response = await _client.PostAsync(url, content, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var contentType = response.Content.Headers.ContentType?.MediaType;
