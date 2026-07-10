@@ -27,8 +27,8 @@
         <!-- 自定义标题栏 -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="8">
-                <FontIcon Glyph="&#xE8A5;" FontSize="14" Foreground="{ThemeResource AccentBrush}" VerticalAlignment="Center"/>
-                <TextBlock Text="极客 OCR v4.0" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                <Image Source="ms-appx:///Assets/app_32.png" Width="20" Height="20" VerticalAlignment="Center"/>
+                <TextBlock Text="凝光 OCR v4.0" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" VerticalAlignment="Center"/>
             </StackPanel>
             <!-- 主题切换按钮（右侧，Margin 避开系统 caption 按钮） -->
             <Button x:Name="ThemeButton" HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -99,16 +99,8 @@
                     <ComboBox x:Name="VoiceComboBox" MinWidth="140" Style="{StaticResource ToolbarComboBox}"/>
                 </StackPanel>
 
-                <!-- 右侧功能按钮 -->
+                <!-- 右侧功能按钮：翻译 → 朗读 → 下载 → 设置 → 置顶 -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
-                    <Button x:Name="SettingsButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
-                            Background="{ThemeResource AccentSubtleBrush}" BorderBrush="{ThemeResource AccentSubtleBorderBrush}"
-                            Click="SettingsButton_Click" ToolTipService.ToolTip="设置">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <FontIcon Glyph="&#xE713;" FontSize="13" Foreground="{ThemeResource AccentBrush}"/>
-                            <TextBlock Text="设置" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource AccentBrush}"/>
-                        </StackPanel>
-                    </Button>
                     <Button x:Name="TranslateButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
                             Background="{ThemeResource SuccessSubtleBrush}" BorderBrush="{ThemeResource SuccessSubtleBorderBrush}"
                             Click="TranslateButton_Click" ToolTipService.ToolTip="翻译">
@@ -131,6 +123,14 @@
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <FontIcon Glyph="&#xE896;" FontSize="13" Foreground="{ThemeResource InfoBrush}"/>
                             <TextBlock Text="下载" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource InfoBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SettingsButton" MinWidth="64" Style="{StaticResource ToolbarButton}"
+                            Background="{ThemeResource AccentSubtleBrush}" BorderBrush="{ThemeResource AccentSubtleBorderBrush}"
+                            Click="SettingsButton_Click" ToolTipService.ToolTip="设置">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE713;" FontSize="13" Foreground="{ThemeResource AccentBrush}"/>
+                            <TextBlock Text="设置" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource AccentBrush}"/>
                         </StackPanel>
                     </Button>
                     <ToggleButton x:Name="PinButton" MinWidth="64" Style="{StaticResource ToolbarToggleButton}"
@@ -159,7 +159,7 @@
                     </Grid.RowDefinitions>
                     <TextBox Grid.Row="0" x:Name="OriginalTextBox" AcceptsReturn="True" TextWrapping="Wrap"
                              Text="{x:Bind Vm.OriginalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             BorderThickness="0" Background="{ThemeResource CardBackgroundBrush}"
+                             BorderThickness="0" Background="Transparent"
                              Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
                              PlaceholderText="OCR 识别结果将显示在这里..."/>
                     <TextBlock Grid.Row="1" x:Name="OcrElapsedText" Margin="10,0,10,8"
@@ -177,7 +177,7 @@
                     </Grid.RowDefinitions>
                     <TextBox Grid.Row="0" x:Name="TranslatedTextBox" AcceptsReturn="True" TextWrapping="Wrap"
                              Text="{x:Bind Vm.TranslatedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             BorderThickness="0" Background="{ThemeResource CardBackgroundBrush}"
+                             BorderThickness="0" Background="Transparent"
                              Foreground="{ThemeResource TextPrimaryBrush}" FontSize="14" Padding="10"
                              PlaceholderText="翻译结果将显示在这里..."/>
                     <TextBlock Grid.Row="1" x:Name="TranslateElapsedText" Margin="10,0,10,8"
