@@ -33,57 +33,17 @@
         <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     </PropertyGroup>
 
-    <!-- Assets 资源管理 -->
+    <!-- XAML 页面：防止被 SDK 当作 None 重复包含 -->
     <ItemGroup>
-        <Content Remove="Assets\qiu.gif" />
-        <Content Remove="Assets\qiujindutiao.gif" />
-        <Content Remove="Assets\Sample Animation.lottie" />
-        <Content Remove="Assets\yuanmao.gif" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Remove="Assets\loading.json" />
-        <None Remove="Assets\loading_1.json" />
-        <None Remove="Assets\mao.gif" />
-        <None Remove="Assets\rocket.json" />
-        <None Remove="Assets\zhayanmao.gif" />
         <None Remove="LoadingWindow.xaml" />
         <None Remove="SettingsWindow.xaml" />
     </ItemGroup>
 
+    <!-- Assets 资源（仅包含实际存在的文件） -->
     <ItemGroup>
         <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
-        <Content Include="Assets\SplashScreen.scale-200.png" />
-        <Content Include="Assets\LockScreenLogo.scale-200.png" />
         <Content Include="Assets\Square150x150Logo.scale-200.png" />
         <Content Include="Assets\Square44x44Logo.scale-200.png" />
-        <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-        <Content Include="Assets\StoreLogo.png" />
-        <Content Include="Assets\Wide310x150Logo.scale-200.png" />
-        <Content Update="Assets\Sample Animation.lottie">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Update="Assets\loading.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Assets\rocket.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Assets\loading_1.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Assets\zhayanmao.gif">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Assets\zhuanmao.gif">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Assets\mao.gif">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -106,7 +66,7 @@
         <PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250602001" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
         <PackageReference Include="System.Drawing.Common" Version="9.0.5" />
     </ItemGroup>
 
